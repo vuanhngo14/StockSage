@@ -10,6 +10,15 @@ Stock market prediction
 2. Move to a specific branch 
     git checkout <branch name>
 
+### Get latest change 
+1. For main branch 
+    - Git fetch origin 
+    - Git pull origin 
+
+2. For sub-branches created, get from main branch 
+    - Git fetch origin main (Main here means that we fetch from main branch)
+    - Git pull origin main 
+
 ### Create a new branch 
 git checkout -b <branch name>
 
