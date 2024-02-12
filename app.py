@@ -6,12 +6,48 @@ from datetime import datetime
 from sklearn.preprocessing import MinMaxScaler 
 from sklearn.model_selection import TimeSeriesSplit
 from keras.models import load_model
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 
 # Package for additional features
 from talib import abstract as ta
 from talib import RSI
 from talib import MACD
+
+def evaluate_model(X, y, model):
+    tscv = TimeSeriesSplit(n_splits=10)
+    mse_scores = []
+    mae_scores = []
+    r2_scores = []
+
+    for train_index, test_index in tscv.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        # Train the model
+        model.fit(X_train, y_train)
+
+        # Make predictions
+        y_pred = model.predict(X_test)
+
+        # Calculate evaluation metrics
+        mse = mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+
+        mse_scores.append(mse)
+        mae_scores.append(mae)
+        r2_scores.append(r2)
+
+    return np.mean(mse_scores), np.mean(mae_scores), np.mean(r2_scores)
+
+def display_news(symbol):
+    news = yf.Ticker(symbol).info['longBusinessSummary']
+    return news
+
 
 app = Flask(__name__)
 
@@ -41,11 +77,6 @@ def predict():
     df['MACD'] = macd
     df['Signal'] = signal
     df['MACD_Hist'] = hist
-
-    # Average True Range (ATR): Measures market volatility.
-    # Higher ATR values indicate higher market volatility, meaning prices are fluctuating more significantly.
-    # Lower ATR values indicate lower volatility, suggesting a calmer market with smaller price swings.
-    # You can use ATR to set stop-loss orders, manage risk, and identify potential trading opportunities based on volatility changes.
 
     close_prices = df["Adj Close"]
     high_prices = df["High"]
@@ -95,10 +126,33 @@ def predict():
     # Make predictions
     predictions = model.predict(X)
 
+    # Plot out
+
+    # Create an interactive plot with Plotly
+    fig = make_subplots(rows=1, cols=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['Adj Close'], mode='lines', name='Past Stock Prices'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=[end_date], y=predictions[-1], mode='markers', marker=dict(color='red', size=8), name='Predicted Price'), row=1, col=1)
+    fig.update_layout(title='Past Stock Prices and Predicted Price', xaxis_title='Date', yaxis_title='Stock Price', showlegend=True)
+
+    # Save the plot as an HTML file
+    plot_path = 'static/prediction_plot.html'  # Save the plot in the static directory
+    fig.write_html(plot_path)
+
     # Extract the last predicted price
     predicted_price = predictions[-1][0]
 
-    return render_template('index.html', prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}')
+    # Display the prediction and accuracy
+    mse_avg, mae_avg, r2_avg = evaluate_model(X, df['Adj Close'].values, model)
+    accuracy = r2_avg * 100
+
+
+
+    return render_template('index.html',
+                           prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
+                           accuracy=f'Accuracy: {accuracy:.2f}',
+                           plot_path = plot_path)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+

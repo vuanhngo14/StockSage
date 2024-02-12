@@ -21,5 +21,17 @@
     {% if prediction %}
         <h2>{{ prediction }}</h2>
     {% endif %}
+
+    {% if plot_path %}
+        <h2>Past Stock Prices and Predicted Price</h2>
+        <iframe src="{{ plot_path }}" width="100%" height="600" frameborder="0"></iframe>
+    {% endif %}
+
+    {% if accuracy %}
+        <h2>Model Accuracy:</h2>
+        <p>Accuracy: {{ accuracy }}%</p>
+    {% endif %}
+
+
 </body>
 </html>
