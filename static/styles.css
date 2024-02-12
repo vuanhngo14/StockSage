@@ -1,0 +1,94 @@
+:root {
+    --primary-100: #FF6600;
+    --primary-200: #ff983f;
+    --primary-300: #ffffa1;
+    --accent-100: #00BFFF;
+    --accent-200: #00619a;
+    --text-100: #FFFFFF;
+    --text-200: #e0e0e0;
+    --bg-100: #1A1A1A;
+    --bg-200: #292929;
+    --bg-300: #404040;
+  }
+  
+  body {
+    background-color: var(--bg-100);
+    color: var(--text-100);
+    font-family: Arial, sans-serif;
+  }
+  
+  h1 {
+    color: var(--primary-100);
+  }
+  
+  form {
+    background-color: var(--bg-200);
+    padding: 20px;
+    border-radius: 5px;
+  }
+  
+  form input, form button {
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  form input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--primary-200);
+    border-radius: 5px;
+    background-color: var(--bg-200);
+    color: var(--text-100);
+    margin-bottom: 20px;
+    
+  }
+  
+  form input:focus {
+    outline: none;
+    border-color: var(--primary-100);
+  }
+  
+  form button {
+    width: 100%;
+    background-color: var(--primary-100);
+    color: var(--text-100);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  form button:hover {
+    background-color: var(--primary-200);
+  }
+  
+  form button {
+    background-color: var(--primary-100);
+    color: var(--text-100);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  form button:hover {
+    background-color: var(--primary-200);
+  }
+  
+  h2 {
+    color: var(--accent-100);
+  }
+  
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  ul li {
+    background-color: var(--bg-300);
+    padding: 10px;
+    margin-bottom: 10px;
+    color: var(--text-200);
+  }

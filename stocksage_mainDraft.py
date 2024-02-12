@@ -118,24 +118,4 @@ lstm.compile(loss='mean_squared_error', optimizer='adam')
 
 history=lstm.fit(X_train, y_train, epochs=100, batch_size=8, verbose=1, shuffle=False)
 
-# Make prediction
-
-y_pred= lstm.predict(X_test)
-y_pred
-
-
-
-# Example for Mean Absolute Error (MAE)
-mae = mean_absolute_error(y_test, y_pred)
-
-# Example for Mean Squared Error (MSE)
-mse = mean_squared_error(y_test, y_pred)
-
-# Example for R-squared
-r2 = r2_score(y_test, y_pred)
-
-print(f"MAE: {mae}")
-print(f"MSE: {mse}")
-print(f"R-squared: {r2}")
-
 lstm.save('model.h5')
