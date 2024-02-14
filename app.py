@@ -155,7 +155,7 @@ def predict():
 
     # Display the news 
 
-    headlines = [data[i]['headline'] for i in range(len(news_sentiment(end_date, ticker_symbol)))]
+    #headlines = [data[i]['headline'] for i in range(len(news_sentiment(end_date, ticker_symbol)))]
 
 
     # Render to the template 
@@ -163,7 +163,8 @@ def predict():
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
                            accuracy=f'Accuracy: {accuracy:.2f}',
                            plot_path = plot_path,
-                           headlines = headlines)
+                           # headlines = headlines
+                           )
 
 if __name__ == '__main__':
     app.run(debug=True)
