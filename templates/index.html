@@ -32,6 +32,15 @@
         <p>Accuracy: {{ accuracy }}%</p>
     {% endif %}
 
+    {% if headlines %}
+        <h2>News Headlines:</h2>
+        <ul>
+            {% for headline in headlines %}
+                <li>{{ headline }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
 
 </body>
 </html>

@@ -16,6 +16,7 @@ from plotly.subplots import make_subplots
 from talib import abstract as ta
 from talib import RSI
 from talib import MACD
+import finnhub # Extract economical news 
 
 def evaluate_model(X, y, model):
     tscv = TimeSeriesSplit(n_splits=10)
@@ -44,9 +45,16 @@ def evaluate_model(X, y, model):
 
     return np.mean(mse_scores), np.mean(mae_scores), np.mean(r2_scores)
 
-def display_news(symbol):
-    news = yf.Ticker(symbol).info['longBusinessSummary']
-    return news
+def news_sentiment(end_date, company_code):
+
+    api_key = "cn0ah7pr01qkcvkfucv0cn0ah7pr01qkcvkfucvg"; 
+
+    finnhub_client = finnhub.Client(api_key=api_key)
+
+    # Get all the news of that day for the company
+    data = finnhub_client.company_news(company_code, _from =end_date, to=end_date)
+
+    return data
 
 
 app = Flask(__name__)
@@ -145,12 +153,17 @@ def predict():
     mse_avg, mae_avg, r2_avg = evaluate_model(X, df['Adj Close'].values, model)
     accuracy = r2_avg * 100
 
+    # Display the news 
+
+    headlines = [data[i]['headline'] for i in range(len(news_sentiment(end_date, ticker_symbol)))]
 
 
+    # Render to the template 
     return render_template('index.html',
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
                            accuracy=f'Accuracy: {accuracy:.2f}',
-                           plot_path = plot_path)
+                           plot_path = plot_path,
+                           headlines = headlines)
 
 if __name__ == '__main__':
     app.run(debug=True)
