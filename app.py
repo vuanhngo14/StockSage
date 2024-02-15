@@ -17,6 +17,7 @@ from talib import abstract as ta
 from talib import RSI
 from talib import MACD
 import finnhub # Extract economical news 
+import json
 
 def evaluate_model(X, y, model):
     tscv = TimeSeriesSplit(n_splits=10)
@@ -45,14 +46,14 @@ def evaluate_model(X, y, model):
 
     return np.mean(mse_scores), np.mean(mae_scores), np.mean(r2_scores)
 
-def news_sentiment(end_date, company_code):
+def news_sentiment(date, company_code):
 
     api_key = "cn0ah7pr01qkcvkfucv0cn0ah7pr01qkcvkfucvg"; 
 
     finnhub_client = finnhub.Client(api_key=api_key)
 
     # Get all the news of that day for the company
-    data = finnhub_client.company_news(company_code, _from =end_date, to=end_date)
+    data = finnhub_client.company_news(company_code, _from =date, to=date)
 
     return data
 
@@ -68,28 +69,24 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+
+    # Get the input values
     ticker_symbol = request.form['ticker_symbol']
     end_date = request.form['end_date']
 
-    # Fetch historical data
     start_date = "2010-01-01"
     data = yf.download(ticker_symbol, start=start_date, end=end_date)
     df = pd.DataFrame(data)
 
-    # Feature engineering and preprocessing
-    # Relative Strength Index (RSI): price movement over a given period.
+    # Feature engineering
     df['RSI'] = RSI(df['Close'], timeperiod=14)
-
-    # Moving Average Convergence Divergence (MACD): Identifies trend strength and potential turning points.
     macd, signal, hist = MACD(df['Adj Close'], fastperiod=12, slowperiod=26, signalperiod=9)
     df['MACD'] = macd
     df['Signal'] = signal
     df['MACD_Hist'] = hist
-
     close_prices = df["Adj Close"]
     high_prices = df["High"]
     low_prices = df["Low"]
-
     true_range = pd.Series(
         [max(hi - lo, abs(hi - close_prev), abs(lo - close_prev))
         for hi, lo, close_prev in zip(high_prices, low_prices, close_prices.shift(1))]
@@ -98,7 +95,6 @@ def predict():
     # Common window size, which can balance.
     window = 14
     atr = true_range.rolling(window=window).mean()
-
     atr_df = pd.DataFrame({'ATR': atr.values}, index=df.index)
 
     # Merge the original DataFrame with the new ATR DataFrame
@@ -107,14 +103,8 @@ def predict():
     # Re-order the data frame
     new_order = ["Open", "High", "Low", "Volume", "RSI", 'MACD', 'Signal', 'MACD_Hist', "ATR", "Adj Close"]
     df = df[new_order]
-
-    # Drop null values
     df.dropna(inplace=True)
-
-    # Set Target Variable
     output_var = pd.DataFrame(df["Adj Close"])
-
-    # Selecting the Features
     features = ["Open", "High", "Low", "Volume", "RSI", 'MACD', 'Signal', 'MACD_Hist', "ATR"]
 
     # Scaling
@@ -134,7 +124,9 @@ def predict():
     # Make predictions
     predictions = model.predict(X)
 
-    # Plot out
+    # ================================================================================================= # 
+    # ###################################### DISPLAYING RESULT # ###################################### #
+    # ================================================================================================= #
 
     # Create an interactive plot with Plotly
     fig = make_subplots(rows=1, cols=1)
@@ -153,17 +145,27 @@ def predict():
     mse_avg, mae_avg, r2_avg = evaluate_model(X, df['Adj Close'].values, model)
     accuracy = r2_avg * 100
 
-    # Display the news 
+    # Retrive the model metadata 
+    with open('model_metadata.json', 'r') as f:
+        metadata = json.load(f)
+    
+    model_version = metadata['version']
+    model_date_modified = metadata['date_modified']
 
-    #headlines = [data[i]['headline'] for i in range(len(news_sentiment(end_date, ticker_symbol)))]
 
+
+    # ================================================================================================= # 
+    # ####################################### RENDER TO HTML # ######################################## #
+    # ================================================================================================= #
 
     # Render to the template 
     return render_template('index.html',
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
                            accuracy=f'Accuracy: {accuracy:.2f}',
                            plot_path = plot_path,
-                           # headlines = headlines
+                           # headlines = headlines,
+                            model_version = model_version,
+                            model_date_modified = model_date_modified
                            )
 
 if __name__ == '__main__':

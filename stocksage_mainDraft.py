@@ -24,6 +24,7 @@ from talib import abstract as ta
 from talib import RSI
 from talib import MACD
 
+import json
 # Fine tuning
 from sklearn.model_selection import GridSearchCV
 
@@ -118,4 +119,22 @@ lstm.compile(loss='mean_squared_error', optimizer='adam')
 
 history=lstm.fit(X_train, y_train, epochs=100, batch_size=8, verbose=1, shuffle=False)
 
-lstm.save('model.h5')
+
+
+# Save model
+# Save the model with metadate to a JSON file
+
+model_version = "v1.0"
+model_date_modified = datetime.today().strftime('%Y-%m-%d')
+
+# Save metadata
+metadata = {
+    "version": model_version,
+    "date_modified": model_date_modified
+}
+
+# Save metadata to a JSON file
+with open('model_metadata.json', 'w') as f:
+    json.dump(metadata, f)
+
+lstm.save('final_model.h5')

@@ -32,14 +32,14 @@
         <p>Accuracy: {{ accuracy }}%</p>
     {% endif %}
 
-    {% if headlines %}
-        <h2>News Headlines:</h2>
-        <ul>
-            {% for headline in headlines %}
-                <li>{{ headline }}</li>
-            {% endfor %}
-        </ul>
+    {% if model_version %}
+        <h3>Model Version: {{ model_version }}</h3>
     {% endif %}
+
+    {% if model_date_modified %}
+        <h3>Model Date Modified: {{ model_date_modified }}</h3>
+    {% endif %}
+
 
 
 </body>
