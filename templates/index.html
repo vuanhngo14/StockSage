@@ -18,6 +18,7 @@
         <button type="submit">Predict</button>
     </form>
 
+
     {% if prediction %}
         <h2>{{ prediction }}</h2>
     {% endif %}
@@ -39,6 +40,23 @@
     {% if model_date_modified %}
         <h3>Model Date Modified: {{ model_date_modified }}</h3>
     {% endif %}
+
+    <h1>News Headlines</h1>
+    
+    <ul>
+        {% for news_item in news_info %}
+            <li>
+                <a href="{{ news_item.url }}" target="_blank">
+                    <img src="{{ news_item.image }}" alt="News Image" style="max-width: 100px; max-height: 100px;">
+                    {{ news_item.headline }}
+                    </br>
+                    {{ news_item.datetime}}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
+
 
 
 

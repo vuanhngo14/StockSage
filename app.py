@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler 
 from sklearn.model_selection import TimeSeriesSplit
 from keras.models import load_model
@@ -49,12 +49,13 @@ def evaluate_model(X, y, model):
 def news_sentiment(date, company_code):
 
     api_key = "cn0ah7pr01qkcvkfucv0cn0ah7pr01qkcvkfucvg"; 
-
     finnhub_client = finnhub.Client(api_key=api_key)
 
-    # Get all the news of that day for the company
-    data = finnhub_client.company_news(company_code, _from =date, to=date)
+    start_date = (datetime.strptime(date, '%Y-%m-%d') - timedelta(days=2)).strftime('%Y-%m-%d')
 
+
+    # Get all the news of that day for the company
+    data = finnhub_client.company_news(company_code, _from = start_date, to=date)
     return data
 
 
@@ -152,7 +153,25 @@ def predict():
     model_version = metadata['version']
     model_date_modified = metadata['date_modified']
 
+    # ================================================================================================= # 
+    # ####################################### DISPLAYING NEWS # ####################################### #
+    # ================================================================================================= #
 
+    news_data = news_sentiment(end_date, ticker_symbol)
+    print("ELEMENTS IN THE NEWS DATA: ", len(news_data))
+
+    news_info = []
+    for news_item in news_data:
+
+        timestamp = news_item['datetime']
+        news_date = datetime.utcfromtimestamp(timestamp)
+
+        news_info.append({
+            'datetime': news_date.strftime('%Y-%m-%d %H:%M:%S'),  
+            'headline': news_item['headline'],
+            'image': news_item['image'],
+            'url': news_item['url']
+        })
 
     # ================================================================================================= # 
     # ####################################### RENDER TO HTML # ######################################## #
@@ -163,9 +182,9 @@ def predict():
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
                            accuracy=f'Accuracy: {accuracy:.2f}',
                            plot_path = plot_path,
-                           # headlines = headlines,
-                            model_version = model_version,
-                            model_date_modified = model_date_modified
+                           model_version = model_version,
+                           model_date_modified = model_date_modified,
+                           news_info = news_info
                            )
 
 if __name__ == '__main__':
