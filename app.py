@@ -20,6 +20,9 @@ import finnhub # Extract economical news
 import json
 
 def evaluate_model(X, y, model):
+    if len(X) <= 1:
+        raise ValueError("Cannot perform cross-validation with only one sample.")
+
     tscv = TimeSeriesSplit(n_splits=10)
     mse_scores = []
     mae_scores = []
@@ -71,6 +74,9 @@ def prepare_data(ticker_symbol, end_date, prediction_days=70):
         scaled_data = np.pad(scaled_data, ((padding_length, 0), (0, 0)), mode='constant', constant_values=0)
         
     x_predict = np.reshape(scaled_data, (1, scaled_data.shape[0], scaled_data.shape[1]))
+
+
+    
     return x_predict, scaler
 
 app = Flask(__name__)
@@ -99,9 +105,6 @@ def predict():
         # Inverse transform the prediction to get the actual value
         prediction = scaler.inverse_transform(np.array([[0, 0, 0, 0, prediction[0, 0]]]))
         predicted_price = prediction[0, -1]
-        
-        return render_template('index.html', prediction=predicted_price)
-    
 
     # Retrive the model metadata 
     with open('model_metadata.json', 'r') as f:
@@ -109,6 +112,29 @@ def predict():
     
     model_version = metadata['version']
     model_date_modified = metadata['date_modified']
+
+    # ================================================================================================= # 
+    # ####################################### DISPLAYING RESULT # ####################################### #
+    # ================================================================================================= #
+
+    # Get historical prices
+    start_date = end_date - timedelta(days=prediction_days)
+    historical_data = yf.download(ticker_symbol, start=start_date, end=end_date)
+    dates = historical_data.index
+    actual_prices = historical_data['Close']
+
+    # Create Plotly figure
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=actual_prices, mode='lines', name='Actual Prices'))
+    fig.add_trace(go.Scatter(x=[end_date], y=[predicted_price], mode='markers', marker=dict(color='red'), name='Predicted Price'))
+    fig.update_layout(title=f"Stock Price Prediction for {ticker_symbol} on {end_date}",
+                        xaxis_title='Date',
+                        yaxis_title='Price (USD)',
+                        showlegend=True)
+    
+    # Convert figure to JSON
+    plot_json = fig.to_json()
+    
 
     # ================================================================================================= # 
     # ####################################### DISPLAYING NEWS # ####################################### #
@@ -137,11 +163,10 @@ def predict():
     # Render to the template 
     return render_template('index.html',
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
-                           # accuracy=f'Accuracy: {accuracy:.2f}',
-                           # plot_path = plot_path,
                            model_version = model_version,
                            model_date_modified = model_date_modified,
-                           news_info = news_info
+                           news_info = news_info,
+                           plot_json=plot_json
                            )
 
 if __name__ == '__main__':
