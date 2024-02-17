@@ -60,38 +60,38 @@ def news_sentiment(date, company_code):
 
 # Function to prepare data for prediction
 def prepare_data(ticker_symbol, end_date, prediction_days=70):
-    start_date = end_date - dt.timedelta(days=prediction_days)
+    start_date = end_date - timedelta(days=prediction_days)
     data = yf.download(ticker_symbol, start=start_date, end=end_date)
-    
-    # Define and fit scaler on training data
     scaler = MinMaxScaler(feature_range=(0, 1))
-    scaler.fit(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+    scaled_data = scaler.fit_transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
     
-    # Scale the data
-    scaled_data = scaler.transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
-    
-    x_predict = scaled_data[-prediction_days:, :]
-    x_predict = np.reshape(x_predict, (1, x_predict.shape[0], x_predict.shape[1]))
+    # Pad the sequence if its length is less than 70
+    if len(scaled_data) < 70:
+        padding_length = 70 - len(scaled_data)
+        scaled_data = np.pad(scaled_data, ((padding_length, 0), (0, 0)), mode='constant', constant_values=0)
+        
+    x_predict = np.reshape(scaled_data, (1, scaled_data.shape[0], scaled_data.shape[1]))
     return x_predict, scaler
 
 app = Flask(__name__)
 
 # Load the pre-trained LSTM model
-model = load_model('model.h5')
+model = load_model('final_model.h5')
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+prediction_days = 70  # Adjust this value as needed to match the expected sequence length of the model
+
 @app.route('/predict', methods=['POST'])
 def predict():
-
     if request.method == 'POST':
         ticker_symbol = request.form['ticker_symbol']
         end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d')
         
         # Prepare data
-        x_predict, scaler = prepare_data(ticker_symbol, end_date)
+        x_predict, scaler = prepare_data(ticker_symbol, end_date, prediction_days=prediction_days)
         
         # Make prediction
         prediction = model.predict(x_predict)
@@ -101,8 +101,14 @@ def predict():
         predicted_price = prediction[0, -1]
         
         return render_template('index.html', prediction=predicted_price)
+    
 
-
+    # Retrive the model metadata 
+    with open('model_metadata.json', 'r') as f:
+        metadata = json.load(f)
+    
+    model_version = metadata['version']
+    model_date_modified = metadata['date_modified']
 
     # ================================================================================================= # 
     # ####################################### DISPLAYING NEWS # ####################################### #
@@ -131,7 +137,7 @@ def predict():
     # Render to the template 
     return render_template('index.html',
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
-                           accuracy=f'Accuracy: {accuracy:.2f}',
+                           # accuracy=f'Accuracy: {accuracy:.2f}',
                            # plot_path = plot_path,
                            model_version = model_version,
                            model_date_modified = model_date_modified,

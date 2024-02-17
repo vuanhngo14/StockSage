@@ -103,4 +103,4 @@ metadata = {
 with open('model_metadata.json', 'w') as f:
     json.dump(metadata, f)
 
-model.save('final_model.h5')
+final_model.save('final_model.h5')
