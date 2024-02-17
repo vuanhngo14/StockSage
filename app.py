@@ -58,6 +58,21 @@ def news_sentiment(date, company_code):
     data = finnhub_client.company_news(company_code, _from = start_date, to=date)
     return data
 
+# Function to prepare data for prediction
+def prepare_data(ticker_symbol, end_date, prediction_days=70):
+    start_date = end_date - dt.timedelta(days=prediction_days)
+    data = yf.download(ticker_symbol, start=start_date, end=end_date)
+    
+    # Define and fit scaler on training data
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaler.fit(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+    
+    # Scale the data
+    scaled_data = scaler.transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+    
+    x_predict = scaled_data[-prediction_days:, :]
+    x_predict = np.reshape(x_predict, (1, x_predict.shape[0], x_predict.shape[1]))
+    return x_predict, scaler
 
 app = Flask(__name__)
 
@@ -71,87 +86,23 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict():
 
-    # Get the input values
-    ticker_symbol = request.form['ticker_symbol']
-    end_date = request.form['end_date']
+    if request.method == 'POST':
+        ticker_symbol = request.form['ticker_symbol']
+        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d')
+        
+        # Prepare data
+        x_predict, scaler = prepare_data(ticker_symbol, end_date)
+        
+        # Make prediction
+        prediction = model.predict(x_predict)
+        
+        # Inverse transform the prediction to get the actual value
+        prediction = scaler.inverse_transform(np.array([[0, 0, 0, 0, prediction[0, 0]]]))
+        predicted_price = prediction[0, -1]
+        
+        return render_template('index.html', prediction=predicted_price)
 
-    start_date = "2010-01-01"
-    data = yf.download(ticker_symbol, start=start_date, end=end_date)
-    df = pd.DataFrame(data)
 
-    # Feature engineering
-    df['RSI'] = RSI(df['Close'], timeperiod=14)
-    macd, signal, hist = MACD(df['Adj Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-    df['MACD'] = macd
-    df['Signal'] = signal
-    df['MACD_Hist'] = hist
-    close_prices = df["Adj Close"]
-    high_prices = df["High"]
-    low_prices = df["Low"]
-    true_range = pd.Series(
-        [max(hi - lo, abs(hi - close_prev), abs(lo - close_prev))
-        for hi, lo, close_prev in zip(high_prices, low_prices, close_prices.shift(1))]
-    )
-
-    # Common window size, which can balance.
-    window = 14
-    atr = true_range.rolling(window=window).mean()
-    atr_df = pd.DataFrame({'ATR': atr.values}, index=df.index)
-
-    # Merge the original DataFrame with the new ATR DataFrame
-    df = pd.merge(df, atr_df, left_index=True, right_index=True)
-
-    # Re-order the data frame
-    new_order = ["Open", "High", "Low", "Volume", "RSI", 'MACD', 'Signal', 'MACD_Hist', "ATR", "Adj Close"]
-    df = df[new_order]
-    df.dropna(inplace=True)
-    output_var = pd.DataFrame(df["Adj Close"])
-    features = ["Open", "High", "Low", "Volume", "RSI", 'MACD', 'Signal', 'MACD_Hist', "ATR"]
-
-    # Scaling
-    scaler = MinMaxScaler()
-    feature_transform = scaler.fit_transform(df[features])
-    feature_transform = pd.DataFrame(data=feature_transform, columns=features, index=df.index)
-
-    # Selecting relevant features and scaling
-    features = ["Open", "High", "Low", "Volume", "RSI", 'MACD', 'Signal', 'MACD_Hist', "ATR"]
-    scaler = MinMaxScaler()
-    feature_transform = scaler.fit_transform(df[features])
-
-    # Reshape data for LSTM input
-    X = np.array(feature_transform)
-    X = X.reshape(X.shape[0], 1, X.shape[1])
-
-    # Make predictions
-    predictions = model.predict(X)
-
-    # ================================================================================================= # 
-    # ###################################### DISPLAYING RESULT # ###################################### #
-    # ================================================================================================= #
-
-    # Create an interactive plot with Plotly
-    fig = make_subplots(rows=1, cols=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df['Adj Close'], mode='lines', name='Past Stock Prices'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=[end_date], y=predictions[-1], mode='markers', marker=dict(color='red', size=8), name='Predicted Price'), row=1, col=1)
-    fig.update_layout(title='Past Stock Prices and Predicted Price', xaxis_title='Date', yaxis_title='Stock Price', showlegend=True)
-
-    # Save the plot as an HTML file
-    plot_path = 'static/prediction_plot.html'  # Save the plot in the static directory
-    fig.write_html(plot_path)
-
-    # Extract the last predicted price
-    predicted_price = predictions[-1][0]
-
-    # Display the prediction and accuracy
-    mse_avg, mae_avg, r2_avg = evaluate_model(X, df['Adj Close'].values, model)
-    accuracy = r2_avg * 100
-
-    # Retrive the model metadata 
-    with open('model_metadata.json', 'r') as f:
-        metadata = json.load(f)
-    
-    model_version = metadata['version']
-    model_date_modified = metadata['date_modified']
 
     # ================================================================================================= # 
     # ####################################### DISPLAYING NEWS # ####################################### #
@@ -181,7 +132,7 @@ def predict():
     return render_template('index.html',
                            prediction=f'Predicted price for {ticker_symbol} on {end_date}: {predicted_price:.2f}',
                            accuracy=f'Accuracy: {accuracy:.2f}',
-                           plot_path = plot_path,
+                           # plot_path = plot_path,
                            model_version = model_version,
                            model_date_modified = model_date_modified,
                            news_info = news_info
