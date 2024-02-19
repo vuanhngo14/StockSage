@@ -36,6 +36,25 @@
         <p>{{ meta_data.date_modified }}</p>
     {% endif %}
 
+    <!-- Display news info -->
+
+    <ul>
+        {% for news_item in news_info %}
+            <li>
+                <a href="{{ news_item.url }}" target="_blank">
+                    {% if news_item.image %}
+                        <img src="{{ news_item.image }}" alt="News Image" style="max-width: 100px; max-height: 100px;">
+                    {% else %}
+                        <img src="https://s.yimg.com/cv/apiv2/social/images/yahoo_default_logo-1200x1200.png" alt="Default Image" style="max-width: 100px; max-height: 100px;">
+                    {% endif %}                    
+                    {{ news_item.headline }}
+                    </br>
+                    {{ news_item.datetime}}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
 
 </body>
 </html>

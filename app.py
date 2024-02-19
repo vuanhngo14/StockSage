@@ -10,6 +10,7 @@ from plotly.subplots import make_subplots
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import json
+import finnhub
 
 
 app = Flask(__name__)
@@ -23,6 +24,18 @@ scaler.fit_transform(yf.download('AAPL', start='2010-01-01', end='2022-01-01')[[
 
 with open('model_metadata.json', 'r') as file:
     metadata = json.load(file)
+
+def news_sentiment(date, company_code):
+
+    api_key = "cn0ah7pr01qkcvkfucv0cn0ah7pr01qkcvkfucvg"; 
+    finnhub_client = finnhub.Client(api_key=api_key)
+
+    start_date = (date - timedelta(days=1)).strftime('%Y-%m-%d')
+    date = date.strftime('%Y-%m-%d')
+
+    # Get all the news of that day for the company
+    data = finnhub_client.company_news(company_code, _from = start_date, to=date)
+    return data
 
 # Route to render the HTML form
 @app.route('/')
@@ -78,6 +91,28 @@ def predict():
     plot_path = 'static/prediction_plot.html'  # Save the plot in the static directory
     fig.write_html(plot_path)
 
+    
+
+    # ================================================ #
+    # Display the news 
+    # ================================================ #
+
+    news_data = news_sentiment(end_date, ticker_symbol)
+    print("ELEMENTS IN THE NEWS DATA: ", len(news_data))
+
+    news_info = []
+    for news_item in news_data:
+
+        timestamp = news_item['datetime']
+        news_date = datetime.utcfromtimestamp(timestamp)
+
+        news_info.append({
+            'datetime': news_date.strftime('%Y-%m-%d %H:%M:%S'),  
+            'headline': news_item['headline'],
+            'image': news_item['image'],
+            'url': news_item['url']
+        })
+
     return render_template('index.html', 
                            ticker_symbol=ticker_symbol, 
                            end_date=end_date, 
@@ -86,7 +121,10 @@ def predict():
                            mae = mae,
                            mse = mse,
                            rmse = rmse,
-                           meta_data = metadata)
+                           meta_data = metadata,
+                           news_info = news_info
+                           )
+
 
 if __name__ == '__main__':
     app.run(debug=True)
