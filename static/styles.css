@@ -85,10 +85,10 @@
     list-style-type: none;
     padding: 0;
   }
-  
-  ul li {
+
+ul li {
     background-color: var(--bg-300);
     padding: 10px;
     margin-bottom: 10px;
     color: var(--text-200);
-  }
+}

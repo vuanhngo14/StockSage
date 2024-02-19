@@ -31,9 +31,8 @@
     {% endif %}
 
     {% if meta_data %}
-        <h2> Model's details:</h2>
-        <p>{{ meta_data.version }}</p>
-        <p>{{ meta_data.date_modified }}</p>
+        <p>Model version: {{ meta_data.version }}</p>
+        <p>Updated: {{ meta_data.date_modified }}</p>
     {% endif %}
 
     <!-- Display news info -->
@@ -48,9 +47,8 @@
                         <img src="https://s.yimg.com/cv/apiv2/social/images/yahoo_default_logo-1200x1200.png" alt="Default Image" style="max-width: 100px; max-height: 100px;">
                     {% endif %}                    
                     {{ news_item.headline }}
-                    </br>
-                    {{ news_item.datetime}}
                 </a>
+                {{ news_item.datetime}}
             </li>
         {% endfor %}
     </ul>
