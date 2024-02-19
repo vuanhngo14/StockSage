@@ -9,6 +9,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+import json
 
 
 app = Flask(__name__)
@@ -19,6 +20,9 @@ model = load_model('final_model.h5')
 # Load the MinMaxScaler
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaler.fit_transform(yf.download('AAPL', start='2010-01-01', end='2022-01-01')[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+
+with open('model_metadata.json', 'r') as file:
+    metadata = json.load(file)
 
 # Route to render the HTML form
 @app.route('/')
@@ -52,8 +56,9 @@ def predict():
 
     # ================================================ #
     # Evaluate the model
-    # ================================================ #
+    # ================================================ # 
 
+    # Display the model version from json file 
     # Evaluate the model
     actual_price = data.iloc[-1]['Close']
     mae = mean_absolute_error([actual_price], [predicted_price])
@@ -80,7 +85,8 @@ def predict():
                            plot_path = plot_path,
                            mae = mae,
                            mse = mse,
-                           rmse = rmse)
+                           rmse = rmse,
+                           meta_data = metadata)
 
 if __name__ == '__main__':
     app.run(debug=True)

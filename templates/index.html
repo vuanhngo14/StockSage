@@ -30,6 +30,12 @@
         <iframe src="{{ plot_path }}" width="100%" height="600" frameborder="0"></iframe>
     {% endif %}
 
+    {% if meta_data %}
+        <h2> Model's details:</h2>
+        <p>{{ meta_data.version }}</p>
+        <p>{{ meta_data.date_modified }}</p>
+    {% endif %}
+
 
 </body>
 </html>
