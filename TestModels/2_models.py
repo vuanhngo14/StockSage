@@ -22,6 +22,10 @@ from scikeras.wrappers import KerasRegressor
 from datetime import datetime
 import json
 
+# ================================================ #
+#                    Main Mode l                   #
+# ================================================ #
+
 def create_lstm_model(units=50, optimizer='adam', batch_size=32, epochs=25):
     model = Sequential()
     model.add(LSTM(units=units, return_sequences=True, input_shape=(x_train.shape[1], x_train.shape[2])))
@@ -72,50 +76,88 @@ def perform_grid_search_and_fit(x_train, y_train, param_grid, n_splits=5):
 
     return final_model
 
-# Load Data
-ticker_symbol = 'AAPL'
+
+# ================================================ #
+#          Fit a general min-max scaler            #
+# ================================================ #
+
 start_date = dt.datetime(2010, 1, 1)
 end_date = dt.datetime(2022, 1, 1)
-data = yf.download(ticker_symbol, start=start_date, end=end_date)
 
-# Prepare Data
+# AAPL, GGLE and NVDA
+df1 = yf.download('AAPL', start=start_date, end=end_date)
+df2 = yf.download('NFLX', start=start_date, end=end_date)
+df3 = yf.download('NVDA', start=start_date, end=end_date)
+df4 = yf.download('META', start=start_date, end=end_date)
+
+# Combine 3 df into final_df (append them below each other)
+final_df = pd.concat([df1, df2, df3, df4], axis=0)
+
 scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+general_data = scaler.fit_transform(final_df[['Open', 'High', 'Low', 'Volume', 'Close']].values)
 
-prediction_days = 70
+# ================================================ #
+#                     Explain                      #
+# ================================================ #
 
-x_train = []
-y_train = []
+# Since stock code varies between different companies, for the best generalization, 
+# we will use ensemble methods for for multiple companies. 
 
-for x in range(prediction_days, len(scaled_data)):
-    x_train.append(scaled_data[x - prediction_days:x, :])  # Using all four features
-    y_train.append(scaled_data[x, 4])  # 'Close' is the fourth column (index 3)
 
-x_train, y_train = np.array(x_train), np.array(y_train)
-x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], x_train.shape[2]))
+# # ================================================ #
+# #                     Model 1                      #
+# # ================================================ #
 
-param_grid = {
-    'batch_size': [32],  
-    'epochs': [25],  
-    'optimizer': ['adam'], 
-}
+# # Load Data 1
+# ticker_symbol = 'AAPL'
+# start_date = dt.datetime(2010, 1, 1)
+# end_date = dt.datetime(2022, 1, 1)
+# data = yf.download(ticker_symbol, start=start_date, end=end_date)
 
-final_model_1 = perform_grid_search_and_fit(x_train, y_train, param_grid)
+# # Prepare Data
+# scaled_data = scaler.transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
 
+# prediction_days = 70
+
+# x_train = []
+# y_train = []
+
+# for x in range(prediction_days, len(scaled_data)):
+#     x_train.append(scaled_data[x - prediction_days:x, :])  # Using all four features
+#     y_train.append(scaled_data[x, 4])  # 'Close' is the fourth column (index 3)
+
+# x_train, y_train = np.array(x_train), np.array(y_train)
+# x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], x_train.shape[2]))
+
+# param_grid = {
+#     'batch_size': [32],  
+#     'epochs': [25],  
+#     'optimizer': ['adam'], 
+# }
+
+# final_model_1 = perform_grid_search_and_fit(x_train, y_train, param_grid)
+
+# final_model_1.save("model1.h5")
+
+# ================================================ #
+#                     Model 2                      #
+# ================================================ #
 
 # Prepare the data for the second stock code 
 
 # Load Data
-ticker_symbol = 'GOOGL'
+ticker_symbol = 'NVDA'
 start_date = dt.datetime(2010, 1, 1)
 end_date = dt.datetime(2022, 1, 1)
 data = yf.download(ticker_symbol, start=start_date, end=end_date)
 
 # Prepare Data
-scaled_data_2 = scaler.fit_transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+scaled_data_2 = scaler.transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
 
 x_train_2 = []
 y_train_2 = []
+
+prediction_days = 70
 
 for x in range(prediction_days, len(scaled_data_2)):
     x_train_2.append(scaled_data_2[x - prediction_days:x, :])  # Using all four features
@@ -123,6 +165,10 @@ for x in range(prediction_days, len(scaled_data_2)):
 
 x_train_2, y_train_2 = np.array(x_train_2), np.array(y_train_2)
 x_train_2 = np.reshape(x_train_2, (x_train_2.shape[0], x_train_2.shape[1], x_train_2.shape[2]))
+
+x_train = x_train_2
+y_train = y_train_2
+
 
 param_grid = {
     'batch_size': [32],  
@@ -132,57 +178,47 @@ param_grid = {
 
 final_model_2 = perform_grid_search_and_fit(x_train_2, y_train_2, param_grid)
 
+final_model_2.save("model2.h5")
 
 # ================================================ #
-# Evaluate the models 
+#                     Model 3                      #
 # ================================================ #
 
-# Update the end_date to today
-end_date_today = dt.datetime.now()
+# Third stock code
 
-# Retrieve data from the end_date until today
-test_data = yf.download('AAPL', start=end_date, end=end_date_today)
+# Load Data
+ticker_symbol = 'META'
+start_date = dt.datetime(2010, 1, 1)
+end_date = dt.datetime(2022, 1, 1)
+data3 = yf.download(ticker_symbol, start=start_date, end=end_date)
 
-# Scale the test data using the same scaler
-scaled_test_data = scaler.transform(test_data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+# Prepare Data
+scaled_data_3 = scaler.fit_transform(data3[['Open', 'High', 'Low', 'Volume', 'Close']].values)
 
-# Create sequences for the test set
-x_test = []
-y_test = []
+x_train_3 = []
+y_train_3 = []
 
-# Use the same prediction_days value as in the training data
-for x in range(prediction_days, len(scaled_test_data)):
-    x_test.append(scaled_test_data[x - prediction_days:x, :])
-    y_test.append(scaled_test_data[x, 4])  # 'Close' is the fifth column (index 4)
 
-x_test, y_test = np.array(x_test), np.array(y_test)
 
-# Reshape the test set to match the LSTM model's input shape
-x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], x_test.shape[2]))
+prediction_days = 70
 
-# Predictions on the test set
-y_pred = final_model_1.predict(x_test)
+for x in range(prediction_days, len(scaled_data_3)):
+    x_train_3.append(scaled_data_3[x - prediction_days:x, :])  # Using all four features
+    y_train_3.append(scaled_data_3[x, 4])  # 'Close' is the fourth column (index 3)
 
-# Inverse transform the scaled predictions and true values to the original scale
-y_pred_original = scaler.inverse_transform(np.concatenate((x_test[:, -1, :4], y_pred.reshape(-1, 1)), axis=1))[:, 4]
-y_test_original = scaler.inverse_transform(np.concatenate((x_test[:, -1, :4], y_test.reshape(-1, 1)), axis=1))[:, 4]
+x_train_3, y_train_3 = np.array(x_train_3), np.array(y_train_3)
+x_train_3 = np.reshape(x_train_3, (x_train_3.shape[0], x_train_3.shape[1], x_train_3.shape[2]))
 
-# Calculate evaluation metrics
-mae = mean_absolute_error(y_test_original, y_pred_original)
-mse = mean_squared_error(y_test_original, y_pred_original)
-r2 = r2_score(y_test_original, y_pred_original)
+x_train = x_train_3
+y_train = y_train_3
 
-# Print the results
-print(f"Mean Absolute Error (MAE): {mae}")
-print(f"Mean Squared Error (MSE): {mse}")
-print(f"R-squared (R2) Score: {r2}")
+param_grid = {
+    'batch_size': [32],  
+    'epochs': [25],  
+    'optimizer': ['adam'], 
+}
 
-# Plot the actual vs predicted closing prices
-plt.figure(figsize=(12, 6))
-plt.plot(test_data.index[prediction_days:], y_test_original, label='Actual Close Prices', color='blue')
-plt.plot(test_data.index[prediction_days:], y_pred_original, label='Predicted Close Prices', color='red', linestyle='--')
-plt.title('Actual vs Predicted Closing Prices')
-plt.xlabel('Date')
-plt.ylabel('Closing Price')
-plt.legend()
-plt.show()
+final_model_3 = perform_grid_search_and_fit(x_train_3, y_train_3, param_grid)
+
+final_model_3.save("model3.h5")
+
