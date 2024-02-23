@@ -23,7 +23,7 @@ def general_scaler():
     # AAPL, GGLE and NVDA
     df1 = yf.download('AAPL', start=start_date, end=end_date)
     df2 = yf.download('NFLX', start=start_date, end=end_date)
-    df3 = yf.download('NVDA', start=start_date, end=end_date)
+    df3 = yf.download('GOOGL', start=start_date, end=end_date)
     df4 = yf.download('META', start=start_date, end=end_date)
 
     # Combine 3 df into final_df (append them below each other)
