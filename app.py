@@ -7,6 +7,7 @@ from keras.models import load_model
 import plotly.graph_objs as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
+import os
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import json
@@ -14,6 +15,7 @@ import finnhub
 
 
 app = Flask(__name__)
+
 
 # Load the trained LSTM model
 model = load_model('final_model.h5')
