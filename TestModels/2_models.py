@@ -87,7 +87,7 @@ end_date = dt.datetime(2022, 1, 1)
 # AAPL, GGLE and NVDA
 df1 = yf.download('AAPL', start=start_date, end=end_date)
 df2 = yf.download('NFLX', start=start_date, end=end_date)
-df3 = yf.download('NVDA', start=start_date, end=end_date)
+df3 = yf.download('GOOGL', start=start_date, end=end_date)
 df4 = yf.download('META', start=start_date, end=end_date)
 
 # Combine 3 df into final_df (append them below each other)
@@ -104,40 +104,40 @@ general_data = scaler.fit_transform(final_df[['Open', 'High', 'Low', 'Volume', '
 # we will use ensemble methods for for multiple companies. 
 
 
-# # ================================================ #
-# #                     Model 1                      #
-# # ================================================ #
+# ================================================ #
+#                     Model 1                      #
+# ================================================ #
 
-# # Load Data 1
-# ticker_symbol = 'AAPL'
-# start_date = dt.datetime(2010, 1, 1)
-# end_date = dt.datetime(2022, 1, 1)
-# data = yf.download(ticker_symbol, start=start_date, end=end_date)
+# Load Data 1
+ticker_symbol = 'AAPL'
+start_date = dt.datetime(2010, 1, 1)
+end_date = dt.datetime(2022, 1, 1)
+data = yf.download(ticker_symbol, start=start_date, end=end_date)
 
-# # Prepare Data
-# scaled_data = scaler.transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
+# Prepare Data
+scaled_data = scaler.transform(data[['Open', 'High', 'Low', 'Volume', 'Close']].values)
 
-# prediction_days = 70
+prediction_days = 70
 
-# x_train = []
-# y_train = []
+x_train = []
+y_train = []
 
-# for x in range(prediction_days, len(scaled_data)):
-#     x_train.append(scaled_data[x - prediction_days:x, :])  # Using all four features
-#     y_train.append(scaled_data[x, 4])  # 'Close' is the fourth column (index 3)
+for x in range(prediction_days, len(scaled_data)):
+    x_train.append(scaled_data[x - prediction_days:x, :])  # Using all four features
+    y_train.append(scaled_data[x, 4])  # 'Close' is the fourth column (index 3)
 
-# x_train, y_train = np.array(x_train), np.array(y_train)
-# x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], x_train.shape[2]))
+x_train, y_train = np.array(x_train), np.array(y_train)
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], x_train.shape[2]))
 
-# param_grid = {
-#     'batch_size': [32],  
-#     'epochs': [25],  
-#     'optimizer': ['adam'], 
-# }
+param_grid = {
+    'batch_size': [32],  
+    'epochs': [25],  
+    'optimizer': ['adam'], 
+}
 
-# final_model_1 = perform_grid_search_and_fit(x_train, y_train, param_grid)
+final_model_1 = perform_grid_search_and_fit(x_train, y_train, param_grid)
 
-# final_model_1.save("model1.h5")
+final_model_1.save("model1.h5")
 
 # ================================================ #
 #                     Model 2                      #
@@ -146,7 +146,7 @@ general_data = scaler.fit_transform(final_df[['Open', 'High', 'Low', 'Volume', '
 # Prepare the data for the second stock code 
 
 # Load Data
-ticker_symbol = 'NVDA'
+ticker_symbol = 'GOOGL'
 start_date = dt.datetime(2010, 1, 1)
 end_date = dt.datetime(2022, 1, 1)
 data = yf.download(ticker_symbol, start=start_date, end=end_date)
