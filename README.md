@@ -10,6 +10,15 @@ Group project | Stock Market Prediction
 ### Deployment
 - AWS EC2, Digital ocean
 
+## Data used for prediction 
+- Stock data pulled from yahoo finance.
+- Implement ensemble learning, combine multiple model for different companies for higher accuracy.
+- Implementing sentiment analysis, conduct on financial news to make more accurate predictions.
+
+## Model:
+- Implemented Long short term memory network (LSTM).
+- Tested with Support vector machine (SVM)
+
   
 
 
